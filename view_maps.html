@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prettymapp - Generated Maps</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .maps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        .map-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transition: transform 0.3s ease;
+        }
+        .map-card:hover {
+            transform: translateY(-5px);
+        }
+        .map-card img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        .map-title {
+            padding: 20px;
+            background: #333;
+            color: white;
+            text-align: center;
+            font-size: 1.3em;
+            font-weight: bold;
+        }
+        .footer {
+            text-align: center;
+            color: white;
+            margin-top: 40px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗺️ Prettymapp Generated Maps</h1>
+        <div class="maps-grid">
+            <div class="map-card">
+                <img src="Oxford_UK.png" alt="Oxford, United Kingdom">
+                <div class="map-title">🇬🇧 Oxford, UK</div>
+            </div>
+            <div class="map-card">
+                <img src="California_USA.png" alt="California, USA">
+                <div class="map-title">🇺🇸 California, USA</div>
+            </div>
+            <div class="map-card">
+                <img src="Texas_USA.png" alt="Texas, USA">
+                <div class="map-title">🇺🇸 Texas, USA</div>
+            </div>
+        </div>
+        <div class="footer">
+            <p>Generated with Prettymapp - Beautiful maps from OpenStreetMap data</p>
+        </div>
+    </div>
+</body>
+</html>

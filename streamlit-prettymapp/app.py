@@ -1,3 +1,9 @@
+import sys
+from pathlib import Path
+
+# Add parent directory to path so we can import prettymapp
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 import copy
 import json
 
@@ -35,12 +41,12 @@ if not st.session_state:
 
 example_image_pattern = str(_HERE / "example_prints" / "{}_small.png")
 example_image_fp = [
-    example_image_pattern.format(name.lower()) for name in list(EXAMPLES.keys())[:4]
+    example_image_pattern.format(name.lower()) for name in list(EXAMPLES.keys())
 ]
 index_selected = image_select(
     "",
     images=example_image_fp,
-    captions=list(EXAMPLES.keys())[:4],
+    captions=list(EXAMPLES.keys()),
     index=0,
     return_value="index",
 )
@@ -163,96 +169,105 @@ for lc_class in st.session_state.lc_classes:
 
 form.form_submit_button(label="Submit")
 
-with st.spinner("Creating map... (may take up to a minute)"):
-    rectangular = shape != "circle"
-    try:
-        aoi = get_aoi(address=address, radius=radius, rectangular=rectangular)
-    except GeoCodingError as e:
-        st.error(f"ERROR: {str(e)}")
-        st.stop()
-    df = st_get_osm_geometries(aoi=aoi)
-    config = {
-        "aoi_bounds": aoi.bounds,
-        "draw_settings": draw_settings,
-        "name_on": name_on,
-        "name": address if custom_title == "" else custom_title,
-        "font_size": font_size,
-        "font_color": font_color,
-        "text_x": text_x,
-        "text_y": text_y,
-        "text_rotation": text_rotation,
-        "shape": shape,
-        "contour_width": contour_width,
-        "contour_color": contour_color,
-        "bg_shape": bg_shape,
-        "bg_buffer": bg_buffer,
-        "bg_color": bg_color,
-    }
-    fig = st_plot_all(_df=df, **config)
-    st.pyplot(fig, pad_inches=0, bbox_inches="tight", transparent=True, dpi=300)
+# Initialize variables
+aoi = None
+df = None
+fig = None
+config = {}
+
+if address.strip():  # Only process if address is not empty
+    with st.spinner("Creating map... (may take up to a minute)"):
+        rectangular = shape != "circle"
+        try:
+            aoi = get_aoi(address=address, radius=radius, rectangular=rectangular)
+        except GeoCodingError as e:
+            st.error(f"ERROR: {str(e)}")
+            st.stop()
+        df = st_get_osm_geometries(aoi=aoi)
+        config = {
+            "aoi_bounds": aoi.bounds,
+            "draw_settings": draw_settings,
+            "name_on": name_on,
+            "name": address if custom_title == "" else custom_title,
+            "font_size": font_size,
+            "font_color": font_color,
+            "text_x": text_x,
+            "text_y": text_y,
+            "text_rotation": text_rotation,
+            "shape": shape,
+            "contour_width": contour_width,
+            "contour_color": contour_color,
+            "bg_shape": bg_shape,
+            "bg_buffer": bg_buffer,
+            "bg_color": bg_color,
+        }
+        fig = st_plot_all(_df=df, **config)
+        st.pyplot(fig, pad_inches=0, bbox_inches="tight", transparent=True, dpi=300)
+else:
+    st.info("Please enter a location address to generate a map.")
 
 st.markdown("</br>", unsafe_allow_html=True)
 st.markdown("</br>", unsafe_allow_html=True)
 
-with st.expander("Export image"):
-    img_format = st.selectbox(
-        "File type",
-        options=["png", "svg"],
-        index=0,
-        help="Export the rendered map in different formats.",
-        key="export_image_format",
-        format_func=lambda v: "PNG (300 dpi)" if v == "png" else "SVG (lossless)",
-    )
-    fname_base = slugify(address) if str(address).strip() else "prettymapp"
-    mime_by_format = {
-        "png": "image/png",
-        "svg": "image/svg+xml",
-    }
-
-    def _make_download_data():
-        # Deferred, only executed on click.
-        if img_format == "svg":
-            return plt_to_svg(fig)
-
-        import io
-
-        buf = io.BytesIO()
-        savefig_kwargs = dict(
-            format=img_format,
-            pad_inches=0,
-            bbox_inches="tight",
-            transparent=True,
+if fig is not None:  # Only show export options if map was generated
+    with st.expander("Export image"):
+        img_format = st.selectbox(
+            "File type",
+            options=["png", "svg"],
+            index=0,
+            help="Export the rendered map in different formats.",
+            key="export_image_format",
+            format_func=lambda v: "PNG (300 dpi)" if v == "png" else "SVG (lossless)",
         )
-        if img_format == "png":
-            savefig_kwargs["dpi"] = 300
-        fig.savefig(buf, **savefig_kwargs)
-        buf.seek(0)
-        return buf.getvalue()
+        fname_base = slugify(address) if str(address).strip() else "prettymapp"
+        mime_by_format = {
+            "png": "image/png",
+            "svg": "image/svg+xml",
+        }
 
-    st.download_button(
-        label="Download",
-        data=_make_download_data,
-        file_name=f"{fname_base}.{img_format}",
-        mime=mime_by_format[img_format],
-        on_click="ignore",
-        key=f"download_image_{img_format}",
-    )
+        def _make_download_data():
+            # Deferred, only executed on click.
+            if img_format == "svg":
+                return plt_to_svg(fig)
 
-ex1, ex2 = st.columns(2)
+            import io
 
-with ex1.expander("Export geometries as GeoJSON"):
-    st.write(f"{df.shape[0]} geometries")
-    geojson_fname_base = slugify(address) if str(address).strip() else "prettymapp"
-    st.download_button(
-        label="Download",
-        data=lambda: df.to_json().encode("utf-8"),
-        file_name=f"{geojson_fname_base}.geojson",
-        mime="application/geo+json",
-    )
+            buf = io.BytesIO()
+            savefig_kwargs = dict(
+                format=img_format,
+                pad_inches=0,
+                bbox_inches="tight",
+                transparent=True,
+            )
+            if img_format == "png":
+                savefig_kwargs["dpi"] = 300
+            fig.savefig(buf, **savefig_kwargs)
+            buf.seek(0)
+            return buf.getvalue()
 
-config = {"address": address, **config}
-with ex2.expander("Export map configuration"):
-    st.write(config)
+        st.download_button(
+            label="Download",
+            data=_make_download_data,
+            file_name=f"{fname_base}.{img_format}",
+            mime=mime_by_format[img_format],
+            key=f"download_image_{img_format}",
+        )
+
+    ex1, ex2 = st.columns(2)
+
+    with ex1.expander("Export geometries as GeoJSON"):
+        st.write(f"{df.shape[0]} geometries")
+        geojson_fname_base = slugify(address) if str(address).strip() else "prettymapp"
+        st.download_button(
+            label="Download",
+            data=lambda: df.to_json().encode("utf-8"),
+            file_name=f"{geojson_fname_base}.geojson",
+            mime="application/geo+json",
+        )
+
+    config_export = {"address": address, **config}
+    with ex2.expander("Export map configuration"):
+        st.write(config_export)
 
 
 st.markdown("---")
